@@ -27,12 +27,17 @@ with DAG(
     
     task1 = BashOperator(
         task_id='run_sample_script',
-        bash_command='python /opt/airflow/plugins/sample_script.py --date {{ params.date }}',
+        bash_command='echo "$(python /opt/airflow/plugins/sample_script.py --date {{ params.date }})"',
+        do_xcom_push=True,
     )
 
     task2 = BashOperator(
         task_id='print_date',
-        bash_command='{% if params.print_flg %}echo {{ params.date }}{% else %}echo "Skip printing"{% endif %}',
+        bash_command='''{% if params.print_flg %}
+                            echo "Date: {{ params.date }}, Result: {{ task_instance.xcom_pull(task_ids="run_sample_script") }}"
+                        {% else %}
+                            echo "Skip printing"
+                        {% endif %}''',
     )
 
     task1 >> task2
